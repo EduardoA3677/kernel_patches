@@ -1,6 +1,6 @@
---- ./fs/exec.c	2024-12-13 13:43:11.679305200 -0500
-+++ ./fs/exec.c	2024-12-13 14:00:07.504043361 -0500
-@@ -1889,14 +1889,30 @@
+--- execo.c	2025-02-08 18:41:33.990249500 -0600
++++ exec.c	2025-02-08 18:44:56.952226800 -0600
+@@ -1889,15 +1889,24 @@
  	return retval;
  }
  
@@ -20,17 +20,13 @@
 +
  	struct linux_binprm *bprm;
  	int retval;
- 
+ 	
+-#if defined(CONFIG_KSU) && !defined(CONFIG_KPROBES)
 +#ifdef CONFIG_KSU
-+	if (unlikely(ksu_execveat_hook))
-+		ksu_handle_execveat(&fd, &filename, &argv, &envp, &flags);
-+	else
-+		ksu_handle_execveat_sucompat(&fd, &filename, &argv, &envp, &flags);
-+#endif
-+
- 	if (IS_ERR(filename))
- 		return PTR_ERR(filename);
-
+ 	if (unlikely(ksu_execveat_hook))
+ 		ksu_handle_execveat(&fd, &filename, &argv, &envp, &flags);
+ 	else
+  
 --- ./fs/open.c	2024-12-13 13:43:11.908474700 -0500
 +++ ./fs/open.c	2024-12-13 14:01:43.390658416 -0500
 @@ -340,6 +340,11 @@
@@ -55,6 +51,27 @@
 +
  	if (mode & ~S_IRWXO)	/* where's F_OK, X_OK, W_OK, R_OK? */
  		return -EINVAL;
+ 
+--- read_write.c	2025-02-08 11:47:41.000000000 -0600
++++ read_writeo.c	2025-02-08 18:56:44.345630700 -0600
+@@ -473,7 +473,7 @@
+ }
+ EXPORT_SYMBOL_NS(kernel_read, ANDROID_GKI_VFS_EXPORT_ONLY);
+ 
+-#if defined(CONFIG_KSU) && !defined(CONFIG_KPROBES)
++#ifdef CONFIG_KSU
+ extern bool ksu_vfs_read_hook __read_mostly;
+ extern int ksu_handle_vfs_read(struct file **file_ptr, char __user **buf_ptr,
+ 			size_t *count_ptr, loff_t **pos);
+@@ -483,7 +483,7 @@
+ {
+ 	ssize_t ret;
+ 	
+-#if defined(CONFIG_KSU) && !defined(CONFIG_KPROBES)
++#ifdef CONFIG_KSU 
+ 	if (unlikely(ksu_vfs_read_hook))
+ 		ksu_handle_vfs_read(&file, &buf, &count, &pos);
+ #endif
 --- ./fs/stat.c	2024-12-13 13:43:11.981808900 -0500
 +++ ./fs/stat.c	2024-12-13 14:05:59.714380994 -0500
 @@ -184,6 +184,10 @@
